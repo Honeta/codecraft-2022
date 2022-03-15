@@ -3,34 +3,25 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <algorithm>
 using namespace std;
 
 vector<string> client_name, site_name;
 vector<vector<int>> demand;
 vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
+vector<vector<int>> qos_after_select, demand_after_sort;
 
 void input();
 void output();
+void choose_site();
+void baseline();
+void balance_very_slow();
 
 int main() {
     input();
-    for (int t = 0; t < demand.size(); ++t) {
-        vector<int> bandwidth = ::bandwidth;
-        for (int i = 0; i < client_name.size(); ++i) {
-            for (int j = 0; j < site_name.size() && demand[t][i]; ++j)
-                if (qos[i][j] < qos_limit && bandwidth[j] >= demand[t][i]) {
-                    ans[t][i][j] = demand[t][i];
-                    bandwidth[j] -= demand[t][i];
-                    demand[t][i] = 0;
-                } else if (qos[i][j] < qos_limit && bandwidth[j]) {
-                    ans[t][i][j] = bandwidth[j];
-                    demand[t][i] -= bandwidth[j];
-                    bandwidth[j] = 0;
-                }
-            if (demand[t][i]) throw exception();
-        }
-    }
+    //baseline();
+    balance_very_slow();
     output();
     return 0;
 }
@@ -127,4 +118,76 @@ void output() {
                     ofs << '<' << site_name[j] << ',' << ans[t][i][j] << '>';
                 }
         }
+}
+bool cmp(int a, int b)
+{
+    return bandwidth[a] == bandwidth[b] ? a < b : bandwidth[a] > bandwidth[b];
+}
+void choose_site()
+{
+    for (int i = 0; i < client_name.size(); ++i)
+    {
+        qos_after_select.emplace_back();
+        for (int j = 0; j < site_name.size(); ++j)
+        {
+            if(qos[i][j] < qos_limit)
+            {
+                qos_after_select.back().push_back(j);
+            }
+        }
+        if(qos_after_select.back().size())
+        {   
+            sort(qos_after_select.back().begin(), qos_after_select.back().end(), cmp);
+            //cerr<<qos_after_select.back().size()<<endl;
+        }
+        
+    }
+}
+
+void baseline()
+{
+    for (int t = 0; t < demand.size(); ++t) {
+        vector<int> bandwidth = ::bandwidth;
+        for (int i = 0; i < client_name.size(); ++i) {
+            for (int j = 0; j < site_name.size() && demand[t][i]; ++j)
+                if (qos[i][j] < qos_limit && bandwidth[j] >= demand[t][i]) {
+                    ans[t][i][j] = demand[t][i];
+                    bandwidth[j] -= demand[t][i];
+                    demand[t][i] = 0;
+                } else if (qos[i][j] < qos_limit && bandwidth[j]) {
+                    ans[t][i][j] = bandwidth[j];
+                    demand[t][i] -= bandwidth[j];
+                    bandwidth[j] = 0;
+                }
+            if (demand[t][i]) throw exception();
+        }
+    }
+}
+
+void balance_very_slow()
+{
+    choose_site();
+    for (int t = 0; t < demand.size(); ++t)
+    {
+        vector<int> bandwidth = ::bandwidth;
+        int flag = 1;
+        while(flag)
+        {
+            flag = 0;
+            for (int i = 0; i < client_name.size(); ++i)
+            {
+                if(demand[t][i] > 0)
+                {
+                    flag = 1;
+                    int siz = qos_after_select[i].size();
+                    for(int j = 0; j < siz; j++)
+                    if(bandwidth[qos_after_select[i][j]] && demand[t][i])
+                    {
+                        bandwidth[qos_after_select[i][j]]--,demand[t][i]--;
+                        ans[t][i][qos_after_select[i][j]]++;
+                    }
+                }
+            }
+        }
+    }
 }
