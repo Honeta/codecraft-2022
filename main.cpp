@@ -15,6 +15,20 @@ void output();
 
 int main() {
     input();
+    for (int t = 0; t < demand.size(); ++t) {
+        vector<int> bandwidth = ::bandwidth;
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = 0; j < site_name.size() && demand[t][i]; ++j)
+                if (qos[i][j] <= qos_limit && bandwidth[j] >= demand[t][i]) {
+                    ans[t][i][j] = demand[t][i];
+                    bandwidth[j] -= demand[t][i];
+                    demand[t][i] = 0;
+                } else if (qos[i][j] <= qos_limit && bandwidth[j]) {
+                    ans[t][i][j] = bandwidth[j];
+                    demand[t][i] -= bandwidth[j];
+                    bandwidth[j] = 0;
+                }
+    }
     output();
     return 0;
 }
