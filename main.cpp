@@ -117,9 +117,11 @@ void output() {
         for (int i = 0; i < client_name.size(); ++i) {
             if (i || t) ofs << endl;
             ofs << client_name[i] << ':';
+            bool is_first = true;
             for (int j = 0; j < site_name.size(); ++j)
                 if (ans[t][i][j]) {
-                    if (j) ofs << ',';
+                    if (!is_first) ofs << ',';
+                    is_first = false;
                     ofs << '<' << site_name[j] << ',' << ans[t][i][j] << '>';
                 }
         }
