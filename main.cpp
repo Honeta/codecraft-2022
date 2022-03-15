@@ -115,12 +115,12 @@ void output() {
     ofs.open("./output/solution.txt");
     for (int t = 0; t < demand.size(); ++t)
         for (int i = 0; i < client_name.size(); ++i) {
+            if (i || t) ofs << endl;
             ofs << client_name[i] << ':';
             for (int j = 0; j < site_name.size(); ++j)
                 if (ans[t][i][j]) {
                     if (j) ofs << ',';
                     ofs << '<' << site_name[j] << ',' << ans[t][i][j] << '>';
                 }
-            ofs << endl;
         }
 }
