@@ -34,6 +34,7 @@ void input() {
     ss >> tmp;
     while (ss >> tmp)
         client_name.push_back(tmp);
+    ss.clear();
     while (ifs >> s) {
         demand.emplace_back();
         for (auto &ch : s)
@@ -43,6 +44,7 @@ void input() {
         ss >> tmp;
         while (ss >> tmp)
             demand.back().push_back(atoi(tmp.c_str()));
+        ss.clear();
     }
     ifs.close();
 
@@ -58,6 +60,7 @@ void input() {
         site_name.push_back(tmp);
         ss >> tmp;
         bandwidth.push_back(atoi(tmp.c_str()));
+        ss.clear();
     }
     ifs.close();
 
@@ -75,6 +78,7 @@ void input() {
             ss >> tmp;
             qos[j][i] = atoi(tmp.c_str());
         }
+        ss.clear();
     }
     ifs.close();
 
@@ -88,6 +92,7 @@ void input() {
     ss << s;
     ss >> tmp;
     ss >> qos_limit;
+    ss.clear();
     ifs.close();
 }
 
