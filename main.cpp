@@ -3,6 +3,8 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <utility>
+#include <algorithm>
 using namespace std;
 
 vector<string> client_name, site_name;
@@ -17,18 +19,22 @@ int main() {
     input();
     for (int t = 0; t < demand.size(); ++t) {
         vector<int> bandwidth = ::bandwidth;
+        vector<pair<int, int>> demand;
+        for (int i = 0; i < client_name.size(); ++i)
+            demand.push_back({i, ::demand[t][i]});
+        sort(demand.begin(), demand.end(), [](pair<int, int> x, pair<int, int> y) { return x.second < y.second; });
         for (int i = 0; i < client_name.size(); ++i) {
-            for (int j = 0; j < site_name.size() && demand[t][i]; ++j)
-                if (qos[i][j] < qos_limit && bandwidth[j] >= demand[t][i]) {
-                    ans[t][i][j] = demand[t][i];
-                    bandwidth[j] -= demand[t][i];
-                    demand[t][i] = 0;
-                } else if (qos[i][j] < qos_limit && bandwidth[j]) {
-                    ans[t][i][j] = bandwidth[j];
-                    demand[t][i] -= bandwidth[j];
+            for (int j = 0; j < site_name.size() && demand[i].second; ++j)
+                if (qos[demand[i].first][j] < qos_limit && bandwidth[j] >= demand[i].second) {
+                    ans[t][demand[i].first][j] = demand[i].second;
+                    bandwidth[j] -= demand[i].second;
+                    demand[i].second = 0;
+                } else if (qos[demand[i].first][j] < qos_limit && bandwidth[j]) {
+                    ans[t][demand[i].first][j] = bandwidth[j];
+                    demand[i].second -= bandwidth[j];
                     bandwidth[j] = 0;
                 }
-            if (demand[t][i]) throw exception();
+            if (demand[i].second) throw exception();
         }
     }
     output();
