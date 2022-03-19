@@ -13,30 +13,37 @@ vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
 
 void input();
+void debug();
 void output();
 
 int main() {
     input();
+    vector<pair<int, int>> bandwidth;
+    for (int i = 0; i < site_name.size(); ++i)
+        bandwidth.push_back({i, ::bandwidth[i]});
     for (int t = 0; t < demand.size(); ++t) {
-        vector<int> bandwidth = ::bandwidth;
         vector<pair<int, int>> demand;
         for (int i = 0; i < client_name.size(); ++i)
             demand.push_back({i, ::demand[t][i]});
-        sort(demand.begin(), demand.end(), [](pair<int, int> x, pair<int, int> y) { return x.second < y.second; });
+        sort(demand.begin(), demand.end(), [](pair<int, int> x, pair<int, int> y) { return x.second > y.second; });
+        for (int i = 0; i < site_name.size(); ++i)
+            bandwidth[i].second = ::bandwidth[bandwidth[i].first];
+        random_shuffle(bandwidth.begin(), bandwidth.end());
         for (int i = 0; i < client_name.size(); ++i) {
             for (int j = 0; j < site_name.size() && demand[i].second; ++j)
-                if (qos[demand[i].first][j] < qos_limit && bandwidth[j] >= demand[i].second) {
-                    ans[t][demand[i].first][j] = demand[i].second;
-                    bandwidth[j] -= demand[i].second;
+                if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second >= demand[i].second) {
+                    ans[t][demand[i].first][bandwidth[j].first] = demand[i].second;
+                    bandwidth[j].second -= demand[i].second;
                     demand[i].second = 0;
-                } else if (qos[demand[i].first][j] < qos_limit && bandwidth[j]) {
-                    ans[t][demand[i].first][j] = bandwidth[j];
-                    demand[i].second -= bandwidth[j];
-                    bandwidth[j] = 0;
+                } else if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second) {
+                    ans[t][demand[i].first][bandwidth[j].first] = bandwidth[j].second;
+                    demand[i].second -= bandwidth[j].second;
+                    bandwidth[j].second = 0;
                 }
             if (demand[i].second) throw exception();
         }
     }
+    debug();
     output();
     return 0;
 }
@@ -133,4 +140,26 @@ void output() {
                     ofs << '<' << site_name[j] << ',' << ans[t][i][j] << '>';
                 }
         }
+}
+
+#include <cmath>
+
+void debug() {
+    ofstream ofs;
+    ofs.open("./output/debug.txt");
+    int sum_ans[135][8928] = {0}, sum95 = 0;
+    for (int t = 0; t < demand.size(); ++t)
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = 0; j < site_name.size(); ++j)
+                sum_ans[j][t] += ans[t][i][j];
+    for (int j = 0; j < site_name.size(); ++j) {
+        sort(sum_ans[j], sum_ans[j] + demand.size());
+        ofs << "site " << site_name[j] << " with bandwidth " << bandwidth[j] << " : ";
+        for (int t = 0; t < demand.size(); ++t)
+            ofs << sum_ans[j][t] << ' ';
+        ofs << endl;
+        sum95 += sum_ans[j][(int)ceil(0.95 * demand.size()) - 1];
+    }
+    ofs << "Total: " << sum95 << endl;
+    ofs.close();
 }
