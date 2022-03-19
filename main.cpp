@@ -13,37 +13,61 @@ vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
 
 void input();
-void debug();
+void debug(string path);
 void output();
 
-int main() {
+using node = pair<int, int>;
+
+void calc(const int &t, node &client, node &server, const int &stream_) {
+    ans[t][client.first][server.first] = stream_;
+    server.second -= stream_;
+    client.second -= stream_;
+}
+
+int main(int argc, char **argv) {
     input();
-    vector<pair<int, int>> bandwidth;
+    vector<node> bandwidth;
     for (int i = 0; i < site_name.size(); ++i)
         bandwidth.push_back({i, ::bandwidth[i]});
     for (int t = 0; t < demand.size(); ++t) {
-        vector<pair<int, int>> demand;
+        vector<node> demand;
         for (int i = 0; i < client_name.size(); ++i)
             demand.push_back({i, ::demand[t][i]});
-        sort(demand.begin(), demand.end(), [](pair<int, int> x, pair<int, int> y) { return x.second > y.second; });
+        sort(demand.begin(), demand.end(), [](node x, node y) { return x.second > y.second; });
         for (int i = 0; i < site_name.size(); ++i)
             bandwidth[i].second = ::bandwidth[bandwidth[i].first];
         random_shuffle(bandwidth.begin(), bandwidth.end());
         for (int i = 0; i < client_name.size(); ++i) {
-            for (int j = 0; j < site_name.size() && demand[i].second; ++j)
-                if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second >= demand[i].second) {
-                    ans[t][demand[i].first][bandwidth[j].first] = demand[i].second;
-                    bandwidth[j].second -= demand[i].second;
-                    demand[i].second = 0;
-                } else if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second) {
-                    ans[t][demand[i].first][bandwidth[j].first] = bandwidth[j].second;
-                    demand[i].second -= bandwidth[j].second;
-                    bandwidth[j].second = 0;
+            vector<int> reachable{};
+            for (int j = 0; j < site_name.size(); j++) {
+                 if (qos[demand[i].first][bandwidth[j].first] < qos_limit) reachable.emplace_back(j);
+            }
+            int n_server = reachable.size();
+            for(int j = 0; j < n_server; ++j) {
+                int stream_;
+                if(j == 0) {
+                    stream_ = min(demand[i].second >> 1, bandwidth[reachable[j]].second);
+                } else {
+                    stream_ = min(demand[i].second/(n_server-j), bandwidth[reachable[j]].second);
                 }
+                calc(t, demand[i], bandwidth[reachable[j]], stream_);
+            }
             if (demand[i].second) throw exception();
+
+            // for (int j = 0; j < site_name.size() && demand[i].second; ++j)
+            //     if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second >= demand[i].second) {
+            //         ans[t][demand[i].first][bandwidth[j].first] = demand[i].second;
+            //         bandwidth[j].second -= demand[i].second;
+            //         demand[i].second = 0;
+            //     } else if (qos[demand[i].first][bandwidth[j].first] < qos_limit && bandwidth[j].second) {
+            //         ans[t][demand[i].first][bandwidth[j].first] = bandwidth[j].second;
+            //         demand[i].second -= bandwidth[j].second;
+            //         bandwidth[j].second = 0;
+            //     }
+            
         }
     }
-    debug();
+    if(argc > 1) debug(string(argv[1]));
     output();
     return 0;
 }
@@ -144,9 +168,9 @@ void output() {
 
 #include <cmath>
 
-void debug() {
+void debug(string path) {
     ofstream ofs;
-    ofs.open("./output/debug.txt");
+    ofs.open(path);
     int sum_ans[135][8928] = {0}, sum95 = 0;
     for (int t = 0; t < demand.size(); ++t)
         for (int i = 0; i < client_name.size(); ++i)
