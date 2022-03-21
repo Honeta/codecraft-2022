@@ -15,8 +15,8 @@ vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
 vector<int> ans_sum[135];
 
-struct edge { int to, w, v, next; } e[100010];
-int s = 0, t = 171, cnt = 1;
+struct edge { int to, w, v, next; } e[10000];
+int s = 0, t = 171, cnt;
 int head[200], d[200], f[200], prep[200], pree[200];
 bool vis[200];
 queue<int> q;
