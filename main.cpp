@@ -13,7 +13,6 @@ vector<string> client_name, site_name;
 vector<vector<int>> demand;
 vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
-vector<int> ans_sum[135];
 
 struct edge { int to, w, v, next; } e[10000];
 int s = 0, t = 171, cnt;
