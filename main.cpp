@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <queue>
 #include <cstring>
+#include <cmath>
 using namespace std;
 
 vector<string> client_name, site_name;
@@ -23,6 +24,7 @@ queue<int> q;
 
 void input();
 void output();
+void debug();
 void init();
 void add(int x, int y, int flow, int value);
 bool spfa();
@@ -32,18 +34,23 @@ int main() {
     for (int k = 0; k < demand.size(); ++k) {
         init();
         for (int i = 0; i < client_name.size(); ++i) {
-            add(0, i + 1, demand[k][i], 1);
-            add(i + 1, 0, 0, -1);
+            add(0, i + 1, demand[k][i], 0);
+            add(i + 1, 0, 0, 0);
         }
         for (int i = 0; i < client_name.size(); ++i)
             for (int j = 0; j < site_name.size(); ++j)
                 if (qos[i][j] < qos_limit) {
-                    add(i + 1, 36 + j, 0x7fffffff, 1);
-                    add(36 + j, i + 1, 0, -1);
+                    add(i + 1, 36 + j, 0x7fffffff, 0);
+                    add(36 + j, i + 1, 0, 0);
                 }
         for (int j = 0; j < site_name.size(); ++j) {
-            add(36 + j, 171, bandwidth[j], 1);
-            add(171, 36 + j, 0, -1);
+            ans_sum[j].emplace_back();
+            vector<int> ans_sum(::ans_sum[j]);
+            ans_sum.resize(demand.size());
+            sort(ans_sum.begin(), ans_sum.end());
+            int sum95 = ans_sum.size() && ans_sum[ceil(0.95 * demand.size())] ? 10000 / ans_sum[ceil(0.95 * demand.size())] : 10000;
+            add(36 + j, 171, bandwidth[j], sum95);
+            add(171, 36 + j, 0, -sum95);
         }
         while (spfa()) {
             int now = t;
@@ -55,10 +62,13 @@ int main() {
         }
         for (int i = 0; i < client_name.size(); ++i)
             for (int j = head[i + 1]; j; j = e[j].next)
-                if (!(j & 1))
+                if (!(j & 1)) {
                     ans[k][i][e[j].to - 36] = e[j ^ 1].w;
+                    ans_sum[e[j].to - 36][k] += e[j ^ 1].w;
+                }
     }
     output();
+    debug();
     return 0;
 }
 
@@ -154,6 +164,26 @@ void output() {
                     ofs << '<' << site_name[j] << ',' << ans[t][i][j] << '>';
                 }
         }
+}
+
+void debug() {
+    ofstream ofs;
+    ofs.open("./output/debug.txt");
+    int sum_ans[135][8928] = {0}, sum95 = 0;
+    for (int t = 0; t < demand.size(); ++t)
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = 0; j < site_name.size(); ++j)
+                sum_ans[j][t] += ans[t][i][j];
+    for (int j = 0; j < site_name.size(); ++j) {
+        sort(sum_ans[j], sum_ans[j] + demand.size());
+        ofs << "site " << site_name[j] << " with bandwidth " << bandwidth[j] << " : ";
+        for (int t = 0; t < demand.size(); ++t)
+            ofs << sum_ans[j][t] << ' ';
+        ofs << endl;
+        sum95 += sum_ans[j][(int)ceil(0.95 * demand.size()) - 1];
+    }
+    ofs << "Total: " << sum95 << endl;
+    ofs.close();
 }
 
 void init() {
