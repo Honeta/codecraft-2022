@@ -169,11 +169,18 @@ void output() {
 void debug() {
     ofstream ofs;
     ofs.open("./output/debug.txt");
-    int sum_ans[135][8928] = {0}, sum95 = 0;
+    int sum_ans[135][8928] = {0}, sum_total[2] = {0}, sum95 = 0;
     for (int t = 0; t < demand.size(); ++t)
-        for (int i = 0; i < client_name.size(); ++i)
-            for (int j = 0; j < site_name.size(); ++j)
+        for (int i = 0; i < client_name.size(); ++i) {
+            sum_total[0] = demand[t][i];
+            sum_total[1] = 0;
+            for (int j = 0; j < site_name.size(); ++j) {
                 sum_ans[j][t] += ans[t][i][j];
+                sum_total[1] += ans[t][i][j];
+            }
+            if (sum_total[0] != sum_total[1])
+                throw std::exception();
+        }
     for (int j = 0; j < site_name.size(); ++j) {
         sort(sum_ans[j], sum_ans[j] + demand.size());
         ofs << "site " << site_name[j] << " with bandwidth " << bandwidth[j] << " : ";
