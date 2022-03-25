@@ -48,7 +48,7 @@ int main() {
             vector<int> ans_sum(::ans_sum[j]);
             ans_sum.resize(demand.size());
             sort(ans_sum.begin(), ans_sum.end());
-            int sum95 = ans_sum.size() && ans_sum[ceil(0.95 * demand.size())] ? 10000 / ans_sum[ceil(0.95 * demand.size())] : 10000;
+            int sum95 = ans_sum.size() >= 20 ? ans_sum[ceil(0.95 * demand.size())] / 1000 : 0;
             add(36 + j, 171, bandwidth[j], sum95);
             add(171, 36 + j, 0, -sum95);
         }
