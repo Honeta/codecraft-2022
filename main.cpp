@@ -8,13 +8,17 @@
 #include <queue>
 #include <cstring>
 #include <cmath>
+#include <map>
+#include <set>
+#include <utility>
 using namespace std;
 
+map<string, int> site_name_to_num;
 vector<string> client_name, site_name;
 vector<vector<int>> demand;
 vector<int> bandwidth;
 int qos[35][135], qos_limit, ans[8928][35][135];
-vector<int> ans_sum[135];
+set<pair<int, int>> ans_sum[135];
 
 struct edge { int to, w, v, next; } e[10000];
 int s = 0, t = 171, cnt;
@@ -24,51 +28,22 @@ queue<int> q;
 
 void input();
 void output();
-void debug();
+void debug(string file_name);
 void init();
 void add(int x, int y, int flow, int value);
 bool spfa();
+void first_time();
+void multi_time();
 
 int main() {
     input();
-    for (int k = 0; k < demand.size(); ++k) {
-        init();
-        for (int i = 0; i < client_name.size(); ++i) {
-            add(0, i + 1, demand[k][i], 0);
-            add(i + 1, 0, 0, 0);
-        }
-        for (int i = 0; i < client_name.size(); ++i)
-            for (int j = 0; j < site_name.size(); ++j)
-                if (qos[i][j] < qos_limit) {
-                    add(i + 1, 36 + j, 0x7fffffff, 0);
-                    add(36 + j, i + 1, 0, 0);
-                }
-        for (int j = 0; j < site_name.size(); ++j) {
-            ans_sum[j].emplace_back();
-            vector<int> ans_sum(::ans_sum[j]);
-            ans_sum.resize(demand.size());
-            sort(ans_sum.begin(), ans_sum.end());
-            int sum95 = ans_sum.size() >= 20 ? ans_sum[ceil(0.95 * demand.size())] / 1000 : 0;
-            add(36 + j, 171, bandwidth[j], sum95);
-            add(171, 36 + j, 0, -sum95);
-        }
-        while (spfa()) {
-            int now = t;
-            while (now != s) {
-                e[pree[now]].w -= f[t];
-                e[pree[now] ^ 1].w += f[t];
-                now = prep[now];
-            }
-        }
-        for (int i = 0; i < client_name.size(); ++i)
-            for (int j = head[i + 1]; j; j = e[j].next)
-                if (!(j & 1)) {
-                    ans[k][i][e[j].to - 36] = e[j ^ 1].w;
-                    ans_sum[e[j].to - 36][k] += e[j ^ 1].w;
-                }
+    first_time();
+    debug("origin.txt");
+    for (int i = 0; i < 10; ++i) {
+        multi_time();
+        debug(string("round ") + to_string(i) + ".txt");
     }
     output();
-    debug();
     return 0;
 }
 
@@ -111,6 +86,7 @@ void input() {
         ss << s;
         ss >> tmp;
         site_name.push_back(tmp);
+        site_name_to_num[tmp] = site_name.size() - 1;
         ss >> tmp;
         bandwidth.push_back(atoi(tmp.c_str()));
         ss.clear();
@@ -127,9 +103,10 @@ void input() {
                 ch = ' ';
         ss << s;
         ss >> tmp;
+        int num = site_name_to_num[tmp];
         for (int j = 0; j < client_name.size(); ++j) {
             ss >> tmp;
-            qos[j][i] = atoi(tmp.c_str());
+            qos[j][num] = atoi(tmp.c_str());
         }
         ss.clear();
     }
@@ -166,9 +143,9 @@ void output() {
         }
 }
 
-void debug() {
+void debug(std::string file_name) {
     ofstream ofs;
-    ofs.open("./output/debug.txt");
+    ofs.open(file_name);
     int sum_ans[135][8928] = {0}, sum_total[2] = {0}, sum95 = 0;
     for (int t = 0; t < demand.size(); ++t)
         for (int i = 0; i < client_name.size(); ++i) {
@@ -233,4 +210,82 @@ bool spfa() {
             }
     }
     return pree[t];
+}
+
+void first_time() {
+    for (int k = 0; k < demand.size(); ++k) {
+        init();
+        for (int i = 0; i < client_name.size(); ++i) {
+            add(0, i + 1, demand[k][i], 0);
+            add(i + 1, 0, 0, 0);
+        }
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = 0; j < site_name.size(); ++j)
+                if (qos[i][j] < qos_limit) {
+                    add(i + 1, 36 + j, 0x7fffffff, 0);
+                    add(36 + j, i + 1, 0, 0);
+                }
+        for (int j = 0; j < site_name.size(); ++j) {
+            add(36 + j, 171, bandwidth[j], 0);
+            add(171, 36 + j, 0, 0);
+        }
+        while (spfa()) {
+            int now = t;
+            while (now != s) {
+                e[pree[now]].w -= f[t];
+                e[pree[now] ^ 1].w += f[t];
+                now = prep[now];
+            }
+        }
+        int ans_sum_temp[135] = {0};
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = head[i + 1]; j; j = e[j].next)
+                if (!(j & 1)) {
+                    ans[k][i][e[j].to - 36] = e[j ^ 1].w;
+                    ans_sum_temp[e[j].to - 36] += e[j ^ 1].w;
+                }
+        for (int j = 0; j < site_name.size(); ++j)
+            ans_sum[j].insert({ans_sum_temp[j], k});
+    }
+}
+
+void multi_time() {
+    for (int k = 0; k < demand.size(); ++k) {
+        init();
+        for (int i = 0; i < client_name.size(); ++i) {
+            add(0, i + 1, demand[k][i], 0);
+            add(i + 1, 0, 0, 0);
+        }
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = 0; j < site_name.size(); ++j)
+                if (qos[i][j] < qos_limit) {
+                    add(i + 1, 36 + j, 0x7fffffff, 0);
+                    add(36 + j, i + 1, 0, 0);
+                }
+        for (int j = 0; j < site_name.size(); ++j) {
+            auto it = ans_sum[j].end();
+            int target = floor(0.05 * ans_sum[j].size()) + 1;
+            while (target--) --it;
+            int sum95 = (*it).first / 100;
+            add(36 + j, 171, bandwidth[j], sum95);
+            add(171, 36 + j, 0, -sum95);
+        }
+        while (spfa()) {
+            int now = t;
+            while (now != s) {
+                e[pree[now]].w -= f[t];
+                e[pree[now] ^ 1].w += f[t];
+                now = prep[now];
+            }
+        }
+        int ans_sum_temp[135] = {0};
+        for (int i = 0; i < client_name.size(); ++i)
+            for (int j = head[i + 1]; j; j = e[j].next)
+                if (!(j & 1)) {
+                    ans[k][i][e[j].to - 36] = e[j ^ 1].w;
+                    ans_sum_temp[e[j].to - 36] += e[j ^ 1].w;
+                }
+        for (int j = 0; j < site_name.size(); ++j)
+            ans_sum[j].insert({ans_sum_temp[j], k});
+    }
 }
