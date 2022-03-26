@@ -8,8 +8,10 @@
 #include <queue>
 #include <cstring>
 #include <cmath>
+#include <map>
 using namespace std;
 
+map<string, int> site_name_to_num;
 vector<string> client_name, site_name;
 vector<vector<int>> demand;
 vector<int> bandwidth;
@@ -111,6 +113,7 @@ void input() {
         ss << s;
         ss >> tmp;
         site_name.push_back(tmp);
+        site_name_to_num[tmp] = site_name.size() - 1;
         ss >> tmp;
         bandwidth.push_back(atoi(tmp.c_str()));
         ss.clear();
@@ -127,9 +130,10 @@ void input() {
                 ch = ' ';
         ss << s;
         ss >> tmp;
+        int num = site_name_to_num[tmp];
         for (int j = 0; j < client_name.size(); ++j) {
             ss >> tmp;
-            qos[j][i] = atoi(tmp.c_str());
+            qos[j][num] = atoi(tmp.c_str());
         }
         ss.clear();
     }
